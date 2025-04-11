@@ -1,0 +1,154 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Aarberg, Spital – Live</title>
+  <style>
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #001489;
+      color: white;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    .clock {
+      position: absolute;
+      top: 20px;
+      right: 40px;
+      font-size: 3em;
+      font-weight: 700;
+      background-color: rgba(255, 255, 255, 0.15);
+      padding: 14px 28px;
+      border-radius: 12px;
+    }
+    .container {
+      width: 90vw;
+      max-width: 1600px;
+      aspect-ratio: 16 / 9;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    h1 {
+      text-align: center;
+      font-size: 4em;
+      font-weight: 700;
+      margin-bottom: 30px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 2em;
+      background-color: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 25px 20px;
+      text-align: left;
+    }
+    th {
+      background-color: rgba(255, 255, 255, 0.15);
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    tr:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+    tr:hover {
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+    .bus-icon {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    .bus-icon::before {
+      content: '';
+      display: inline-block;
+      width: 100%;
+      height: 100%;
+      background-color: white;
+      -webkit-mask: url('data:image/svg+xml;utf8,<svg fill="white" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path d="M4 10c0-2.2 1.8-4 4-4h32c2.2 0 4 1.8 4 4v22h-4c0 2.2-1.8 4-4 4s-4-1.8-4-4H16c0 2.2-1.8 4-4 4s-4-1.8-4-4H4V10zm4 0v10h32V10H8zm4 20a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm28 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>') center / contain no-repeat;
+      mask: url('data:image/svg+xml;utf8,<svg fill="white" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path d="M4 10c0-2.2 1.8-4 4-4h32c2.2 0 4 1.8 4 4v22h-4c0 2.2-1.8 4-4 4s-4-1.8-4-4H16c0 2.2-1.8 4-4 4s-4-1.8-4-4H4V10zm4 0v10h32V10H8zm4 20a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm28 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>') center / contain no-repeat;
+    }
+    td:first-child {
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="clock" id="clock"></div>
+  <div class="container">
+    <h1>Aarberg, Spital</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>Linie</th>
+          <th>Ziel</th>
+          <th>Abfahrt</th>
+          <th>Hinweis</th>
+        </tr>
+      </thead>
+      <tbody id="fahrplan-body">
+        <tr><td colspan="4">Lade Verbindungen ...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    function updateClock() {
+      const now = new Date();
+      const time = now.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+      document.getElementById("clock").textContent = time;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    async function ladeVerbindungen() {
+      try {
+        const response = await fetch("https://transport.opendata.ch/v1/stationboard?station=Aarberg,%20Spital&limit=5");
+        const data = await response.json();
+        const tbody = document.getElementById("fahrplan-body");
+        tbody.innerHTML = "";
+
+        data.stationboard.forEach(item => {
+          const time = new Date(item.stop.departure).toLocaleTimeString("de-CH", {
+            hour: '2-digit', minute: '2-digit'
+          });
+          const line = item.category + " " + item.number;
+          const destination = item.to;
+
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td><span class="bus-icon"></span>${line}</td>
+            <td>${destination}</td>
+            <td>${time}</td>
+            <td></td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (error) {
+        document.getElementById("fahrplan-body").innerHTML = `<tr><td colspan="4">Fehler beim Laden der Daten</td></tr>`;
+        console.error("Fehler beim Laden der Fahrplandaten:", error);
+      }
+    }
+
+    ladeVerbindungen();
+    setInterval(ladeVerbindungen, 60000); // alle 60 Sek. neu laden
+  </script>
+</body>
+</html>
